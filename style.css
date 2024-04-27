@@ -1,27 +1,32 @@
 body {
     background-color: #f0f0f0;
-    font-family: Arial, sans-serif;
+    font-family: 'Courier New', Courier, monospace;
     text-align: center;
+    margin: 0;
+    padding: 0;
 }
 
 header {
     background-color: #91E5FF;
     color: white;
     padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 h1 {
     margin: 0;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 main {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: calc(100vh - 80px);
+    height: calc(100vh - 80px);
 }
 
 #cloudy-gif {
     max-width: 100%;
-    height: auto;
+    max-height: 100%;
+    object-fit: contain;
 }
