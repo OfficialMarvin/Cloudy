@@ -3,23 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Claude - Conversational AI</title>
+  <title>Cloudy - Conversational AI</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="container">
-    <h1>Chat with Claude</h1>
+    <h1>Talk to Cloudy</h1>
     <div class="chat-container">
       <div class="chat-messages"></div>
       <div class="chat-input">
-        <input type="text" id="chat-input" placeholder="Type your message..." />
-        <button id="chat-send">Send</button>
         <button id="chat-voice">Speak</button>
       </div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@anthropic-ai/claude-sdk-js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/webrtc-adapter/8.1.1/adapter.min.js"></script>
   <script src="script.js"></script>
-</body>
+</head>
 </html>
