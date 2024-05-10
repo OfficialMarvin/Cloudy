@@ -28,25 +28,12 @@ body {
   margin-bottom: 10px;
 }
 
-.chat-message {
-  margin-bottom: 10px;
-}
-
 .chat-input {
   display: flex;
-  align-items: center;
-}
-
-.chat-input input {
-  flex-grow: 1;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 16px;
+  justify-content: center;
 }
 
 .chat-input button {
-  margin-left: 10px;
   padding: 10px 20px;
   background-color: #4CAF50;
   color: white;
