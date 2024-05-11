@@ -1,68 +1,116 @@
-// Initialize the Anthropic SDK
-const { Configuration, OpenAIApi } = require('@anthropic-ai/claude-sdk-js');
-const configuration = new Configuration({
-  apiKey: 'YOUR_API_KEY_HERE'
-});
-const openai = new OpenAIApi(configuration);
+const startBtn = document.getElementById('start-btn');
+const stopBtn = document.getElementById('stop-btn');
+let listening = false;
+let recognizer;
 
-// Get DOM elements
-const chatMessages = document.querySelector('.chat-messages');
-const chatVoiceButton = document.getElementById('chat-voice');
+// Setup the conversational context for Cloudy
+const cloudyContext = "Cloudy is designed to provide concise, friendly, and conversational responses.";
 
-// Hardcoded context prompt
-const CONTEXT_PROMPT = `You are Cloudy, a helpful and caring conversational AI assistant created by Anthropic. Your goal is to engage in natural and meaningful conversations with users, providing informative and thoughtful responses. You have a warm and friendly personality, and you enjoy discussing a wide range of topics. You are patient, attentive, and always strive to be genuinely helpful.`;
+// Initialize the SpeechSynthesis API
+const speechSynth = window.speechSynthesis;
 
-// Function to add a message to the chat
-function addMessage(message, isUser) {
-  const messageElement = document.createElement('div');
-  messageElement.classList.add('chat-message');
-  messageElement.classList.add(isUser ? 'user-message' : 'assistant-message');
-  messageElement.textContent = message;
-  chatMessages.appendChild(messageElement);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
+// OpenAI API settings
+const openAIApiKey = 'YOUR_OPENAI_API_KEY'; // Replace 'YOUR_OPENAI_API_KEY' with your actual API key
+const openAIModel = 'gpt-4.5-turbo';
+
+// Function to initialize the media stream for the camera
+async function initCamera() {
+    try {
+        const videoElement = document.createElement('video');
+        videoElement.setAttribute('playsinline', '');
+        videoElement.setAttribute('autoplay', '');
+        videoElement.setAttribute('muted', '');
+        document.getElementById('camera-container').appendChild(videoElement);
+
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        videoElement.srcObject = stream;
+    } catch (error) {
+        console.error('Error accessing camera:', error);
+    }
 }
 
-// Handle voice input
-chatVoiceButton.addEventListener('click', async () => {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const audioContext = new AudioContext();
-    const mediaStreamSource = audioContext.createMediaStreamSource(stream);
-    const recognizer = new webkitSpeechRecognition();
-    recognizer.continuous = true;
-    recognizer.interimResults = true;
+// Initialize the Web Speech API recognizer
+function initSpeechRecognizer() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognizer = new SpeechRecognition();
+    recognizer.continuous = false;
+    recognizer.lang = 'en-US';
+    recognizer.interimResults = false;
+    recognizer.maxAlternatives = 1;
 
     recognizer.onresult = async (event) => {
-      const userInput = event.results[event.results.length - 1][0].transcript.trim();
-      addMessage(userInput, true);
-
-      try {
-        const response = await openai.createCompletion({
-          model: 'text-davinci-002',
-          prompt: `${CONTEXT_PROMPT}\n\nUser: ${userInput}\nCloudy:`,
-          max_tokens: 2048,
-          n: 1,
-          stop: null,
-          temperature: 0.7,
-          presence_penalty: 0.6,
-          frequency_penalty: 0.6,
-          top_p: 1,
-        });
-        const assistantMessage = response.data.choices[0].text.trim();
-        addMessage(assistantMessage, false);
-
-        // Use text-to-speech to generate audio response
-        const utterance = new SpeechSynthesisUtterance(assistantMessage);
-        speechSynthesis.speak(utterance);
-      } catch (error) {
-        console.error('Error:', error);
-        addMessage('Apologies, there was an error processing your request.', false);
-      }
+        const last = event.results.length - 1;
+        const text = event.results[last][0].transcript;
+        console.log('Heard:', text);
+        sendToOpenAI(text);
     };
 
-    recognizer.start();
-  } catch (error) {
-    console.error('Error:', error);
-    addMessage('Apologies, there was an error with the voice recognition.', false);
-  }
+    recognizer.onend = () => {
+        if (listening) {
+            recognizer.start();
+        }
+    };
+}
+
+// Send the user's speech to OpenAI and handle the response
+async function sendToOpenAI(text) {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${openAIApiKey}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            model: openAIModel,
+            messages: [{ role: 'user', content: text }, { role: 'system', content: cloudyContext }],
+        })
+    });
+
+    if (response.ok) {
+        const data = await response.json();
+        const reply = data.choices[0].message.content;
+        console.log('Cloudy:', reply);
+        speak(reply);
+    } else {
+        console.error('Error from OpenAI:', await response.text());
+    }
+}
+
+// Use the SpeechSynthesis API to speak text out loud
+function speak(text) {
+    if (speechSynth.speaking) {
+        console.error('SpeechSynthesis is already speaking.');
+        return;
+    }
+    const utterThis = new SpeechSynthesisUtterance(text);
+    utterThis.onend = () => {
+        console.log('SpeechSynthesisUtterance.onend');
+    };
+    utterThis.onerror = (event) => {
+        console.error('SpeechSynthesisUtterance.onerror', event);
+    };
+    speechSynth.speak(utterThis);
+}
+
+// Start listening to speech
+startBtn.addEventListener('click', () => {
+    if (listening) {
+        recognizer.stop();
+        listening = false;
+    } else {
+        recognizer.start();
+        listening = true;
+    }
 });
+
+// Stop listening to speech
+stopBtn.addEventListener('click', () => {
+    if (listening) {
+        recognizer.stop();
+        listening = false;
+    }
+});
+
+// Initialize the application components
+initCamera();
+initSpeechRecognizer();
